@@ -13,9 +13,6 @@ string getenv(const char* name, const string& defaultValue);
 // 获取公网IP
 string getip();
 
-// 向阿里云更新DNS
-void sendip(const string& ip, const string& domainName);
-
 // 签名
 string getSignature(const string& keySecret, const string& str);
 
@@ -34,4 +31,4 @@ map<string, string> getDefaultParams();
 
 string doAction(const Objmap& params, const string& method = "GET");
 
-void sendip(const string& ip, const string& domainName);
+bool sendip(const string& ip, const string& domainName);

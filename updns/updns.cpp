@@ -20,8 +20,14 @@ random_device rd;
 string getip() {
 	httplib::Client client("api.ipify.org");
 	auto res = client.Get("/");
-	auto body = res->body;
-	return body;
+	if (res) {
+		auto body = res->body;
+		return body;
+	}
+	else {
+		throw "Network Error";
+	}
+
 }
 
 string getTimestamp() {
@@ -128,7 +134,7 @@ string doAction(const Objmap& params, const string& method) {
 	return "";
 }
 
-void sendip(const string& ip, const string& domainName) {
+bool sendip(const string& ip, const string& domainName) {
 	Objmap obj;
 	obj["Action"] = "DescribeDomainRecords";
 	obj["DomainName"] = domainName;
@@ -138,23 +144,35 @@ void sendip(const string& ip, const string& domainName) {
 	auto DomainRecords = j["DomainRecords"]["Record"];
 	for (const auto& record : DomainRecords) {
 		if (record["Type"].get<string>() == "A") {
-			Objmap updateParams;
-			updateParams["Action"] = "UpdateDomainRecord";
-			updateParams["RecordId"] = record["RecordId"];
-			updateParams["RR"] = record["RR"];
-			updateParams["Type"] = record["Type"];
-			updateParams["Value"] = ip;
+			if (record["Value"].get<string>() != ip) {
+				Objmap updateParams;
+				updateParams["Action"] = "UpdateDomainRecord";
+				updateParams["RecordId"] = record["RecordId"];
+				updateParams["RR"] = record["RR"];
+				updateParams["Type"] = record["Type"];
+				updateParams["Value"] = ip;
 
-			doAction(updateParams);
+				doAction(updateParams);
+				return true;
+			}
 		}
 	}
-	return;
+	return false;
 }
 
 int main()
 {
-	auto ip = getip();
-	sendip(ip, getenv("ALIYUN_DOMAIN", ""));
+	while (1) {
+		try {
+			auto ip = getip();
+			if (sendip(ip, getenv("ALIYUN_DOMAIN", ""))) {
+				cout << "new ip: " << ip << endl;
+			}
+		}
+		catch (const char * err) {
+			cout << err << endl;
+		}
 
-    cout << ip << endl;
+		this_thread::sleep_for(60s);
+	}
 }
