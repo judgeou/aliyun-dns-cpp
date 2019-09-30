@@ -9,9 +9,11 @@
 #include "httplib.h"
 #include "../crypto/hmac.h"
 #include "../crypto/base64.h"
+#include "json.hpp"
 #include "updns.h"
 
 using namespace std;
+using json = nlohmann::json;
 
 random_device rd;
 
@@ -131,6 +133,21 @@ void sendip(const string& ip, const string& domainName) {
 	obj["Action"] = "DescribeDomainRecords";
 	obj["DomainName"] = domainName;
 	auto res = doAction(obj);
+	json j = json::parse(res);
+	
+	auto DomainRecords = j["DomainRecords"]["Record"];
+	for (const auto& record : DomainRecords) {
+		if (record["Type"].get<string>() == "A") {
+			Objmap updateParams;
+			updateParams["Action"] = "UpdateDomainRecord";
+			updateParams["RecordId"] = record["RecordId"];
+			updateParams["RR"] = record["RR"];
+			updateParams["Type"] = record["Type"];
+			updateParams["Value"] = ip;
+
+			doAction(updateParams);
+		}
+	}
 	return;
 }
 
