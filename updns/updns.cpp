@@ -143,7 +143,7 @@ bool sendip(const string& ip, const string& domainName) {
 	
 	auto DomainRecords = j["DomainRecords"]["Record"];
 	for (const auto& record : DomainRecords) {
-		if (record["Type"].get<string>() == "A") {
+		if (record["Type"].get<string>() == "A" && record["RR"].get<string>() == "@") {
 			if (record["Value"].get<string>() != ip) {
 				Objmap updateParams;
 				updateParams["Action"] = "UpdateDomainRecord";
